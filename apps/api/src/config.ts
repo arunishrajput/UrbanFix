@@ -41,6 +41,29 @@ const csv = (def: string) =>
         .filter(Boolean),
     );
 
+/**
+ * Upstash accepts only TLS, but its dashboard also shows a `redis://` URL (for `redis-cli --tls`),
+ * so that one is upgraded to `rediss://`. Its REST URL (`https://`) can't be used by a Redis client.
+ */
+export const redisUrl = z
+  .string()
+  .default('redis://localhost:6379')
+  .transform((raw, ctx) => {
+    const value = raw.trim().replace(/^(["'])(.*)\1$/, '$2');
+    const url = URL.parse(value);
+    if (url?.protocol !== 'redis:' && url?.protocol !== 'rediss:') {
+      ctx.addIssue({
+        code: 'custom',
+        message:
+          'must start with redis:// or rediss://. For Upstash, copy the TLS connection URL ' +
+          '(rediss://default:<password>@<host>.upstash.io:6379), not the https:// REST URL.',
+      });
+      return z.NEVER;
+    }
+    if (url.protocol === 'redis:' && url.hostname.endsWith('.upstash.io')) return `rediss:${value.slice(6)}`;
+    return value;
+  });
+
 const isProd = process.env.NODE_ENV === 'production';
 /** Render injects the service's public URL; use it so single-service deploys need no URL config. */
 const hostedUrl = process.env.RENDER_EXTERNAL_URL;
@@ -61,7 +84,7 @@ const schema = z.object({
 
   DATABASE_URL: z.string().default('postgres://urbanfix:urbanfix@localhost:5432/urbanfix'),
   DATABASE_POOL_MAX: z.coerce.number().int().default(10),
-  REDIS_URL: z.string().default('redis://localhost:6379'),
+  REDIS_URL: redisUrl,
 
   JWT_ACCESS_SECRET: isProd
     ? z.string().min(32, 'JWT_ACCESS_SECRET must be at least 32 characters')

@@ -11,7 +11,7 @@ import { MUNICIPAL_ROLES, type ClientToServerEvents, type ServerToClientEvents }
 import { config } from '../config';
 import { verifyAccessToken } from './auth';
 import { logger } from './logger';
-import { redis } from './redis';
+import { createPubSubConnection } from './redis';
 
 type Events = ServerToClientEvents;
 type EventName = keyof Events;
@@ -29,12 +29,13 @@ let io: Server<ClientToServerEvents, ServerToClientEvents> | null = null;
 let emitter: Emitter<ServerToClientEvents> | null = null;
 
 export function attachRealtime(server: HttpServer) {
-  const pub = redis.duplicate();
-  const sub = redis.duplicate();
   io = new Server(server, {
     path: '/socket.io',
     cors: { origin: config.WEB_ORIGIN, credentials: true },
-    adapter: createAdapter(pub, sub),
+    // Inline mode is one process, so the in-memory adapter reaches every socket and costs no Redis commands.
+    ...(config.JOBS_MODE === 'queue' && {
+      adapter: createAdapter(createPubSubConnection(), createPubSubConnection()),
+    }),
     serveClient: false,
   });
 
@@ -69,7 +70,7 @@ export function attachRealtime(server: HttpServer) {
 function target() {
   if (io) return io;
   if (config.JOBS_MODE === 'queue' && !config.isTest) {
-    emitter ??= new Emitter(redis.duplicate());
+    emitter ??= new Emitter(createPubSubConnection());
     return emitter;
   }
   return null;

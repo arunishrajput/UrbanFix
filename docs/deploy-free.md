@@ -51,15 +51,18 @@ or committed anywhere, delete it and create a new one.
 
 You don't need to enable PostGIS, pg_trgm or citext yourself; the first migration creates them. On startup `pg` may
 log an SSL-mode notice about `sslmode=require`; it is harmless, because Neon's certificates are publicly trusted.
+To silence it, change `sslmode=require` to `sslmode=verify-full` in the connection string.
 
 ## 3. Redis: Upstash (3 min)
 
 1. Sign up at [upstash.com](https://upstash.com) and create a **Redis** database.
 2. Choose region `ap-southeast-1` and the free plan. Leave eviction off.
-3. Copy the TLS URL from the database page. It looks like:
+3. Copy the connection URL from the database page. It looks like:
    ```
    rediss://default:…@xxx.upstash.io:6379
    ```
+   The `redis://…` URL in Upstash's `redis-cli --tls` snippet works too: UrbanFix switches Upstash URLs to TLS. The
+   REST URL (`https://…`) doesn't work, because it's for Upstash's HTTP API.
 
 ## 4. Photo storage: Supabase Storage (5 min)
 
@@ -174,7 +177,8 @@ Every push to the deployed branch redeploys automatically.
 | Symptom                                               | Fix                                                                                                                                                    |
 | ----------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Deploy fails with `Invalid environment configuration` | The log names the variable. A common cause is a missing or short `JWT_ACCESS_SECRET` when it was added by hand; it needs 32+ characters.               |
-| `/readyz` returns 503                                 | Check `DATABASE_URL` (keep `?sslmode=require`) and `REDIS_URL` (must start with `rediss://`).                                                          |
+| `/readyz` returns 503                                 | Check `DATABASE_URL` (keep its `sslmode` parameter) and `REDIS_URL`. A `Redis connection failed` log line gives the reason.                            |
+| Log shows `Redis connection failed`                   | `WRONGPASS`: copy the password again. `ENOTFOUND`: the host name is wrong. `connection closed`: the server needs TLS, so use `rediss://`.              |
 | Uploads fail with an S3 error                         | Check the endpoint, region and key pair. The bucket name must match `S3_BUCKET` (`urbanfix`).                                                          |
 | Photos upload but don't display                       | The bucket isn't public, or `S3_PUBLIC_URL` is wrong. Open one photo URL directly in the browser.                                                      |
 | Map tiles are grey                                    | A browser extension or network is blocking `tile.openstreetmap.org`, or the tile server is rate limiting; set `VITE_MAP_TILE_URL` to another provider. |

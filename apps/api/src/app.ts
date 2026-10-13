@@ -76,6 +76,9 @@ export async function buildApp() {
       redis,
       nameSpace: 'uf:rl:',
       skipOnError: true,
+      // Only the API: static files (the SPA, uploads) would each cost a Redis command, and
+      // they should still load while Redis is unreachable.
+      allowList: (req) => !req.url.startsWith('/api/'),
       keyGenerator: (req) => req.auth?.id ?? req.ip,
       errorResponseBuilder: (_req, ctx) => ({
         statusCode: 429,
