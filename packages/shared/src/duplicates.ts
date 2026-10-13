@@ -120,24 +120,33 @@ export const trigramScore = (sim: number) => clamp((sim - 0.1) / 0.5, 0, 1);
 /** Maps text-embedding cosine similarity to 0..1. */
 export const textEmbeddingScore = (cos: number) => clamp((cos - 0.65) / 0.25, 0, 1);
 
+/**
+ * Best photo match over all pairs. A perceptual hash only recognises
+ * near-identical images, so it can raise confidence but never lower it: two
+ * different shots of the same garbage pile hash very differently. Only semantic
+ * embeddings are trusted as evidence that photos show different things.
+ */
 export function imageSignal(query: PhotoSignature[], candidate: PhotoSignature[]): number | null {
   let best: number | null = null;
   for (const q of query) {
     for (const c of candidate) {
       if (q.sha256 && c.sha256 && q.sha256 === c.sha256) return 1;
       let pair: number | null = null;
-      if (q.phash && c.phash && q.phash.length === c.phash.length) {
-        pair = phashScore(phashSimilarity(q.phash, c.phash));
-      }
       if (q.embedding?.length && c.embedding?.length === q.embedding.length) {
-        const e = imageEmbeddingScore(cosineSimilarity(q.embedding, c.embedding));
-        pair = pair === null ? e : Math.max(pair, e);
+        pair = imageEmbeddingScore(cosineSimilarity(q.embedding, c.embedding));
+      }
+      if (q.phash && c.phash && q.phash.length === c.phash.length) {
+        const p = phashScore(phashSimilarity(q.phash, c.phash));
+        if (p >= PHASH_MATCH_FLOOR) pair = pair === null ? p : Math.max(pair, p);
       }
       if (pair !== null) best = best === null ? pair : Math.max(best, pair);
     }
   }
   return best;
 }
+
+/** pHash scores below this are "no information", not "different photo". */
+const PHASH_MATCH_FLOOR = 0.5;
 
 export function textSignal(query: DuplicateQuery, candidate: DuplicateCandidate): number | null {
   if (!query.hasText) return null;

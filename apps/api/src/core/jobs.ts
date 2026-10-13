@@ -68,6 +68,8 @@ function queue(name: QueueName): Queue {
 }
 
 const inlinePending = new Set<Promise<void>>();
+/** Node timers overflow past ~24.8 days and would fire immediately. */
+const MAX_TIMER_MS = 2 ** 31 - 1;
 
 export interface EnqueueOptions {
   delayMs?: number;
@@ -79,11 +81,19 @@ export async function enqueue<N extends JobName>(name: N, data: JobPayloads[N], 
   if (config.JOBS_MODE === 'inline') {
     const handler = handlers.get(name);
     if (!handler) return;
-    const run = async () => {
-      if (opts.delayMs) await new Promise((r) => setTimeout(r, opts.delayMs));
-      await handler(data);
-    };
-    const p = run()
+    if (opts.delayMs) {
+      // Delayed work (e.g. closing a verification window in 72 h) runs on a timer that never
+      // keeps the process alive. Inline mode is for tests and single-process setups; use the
+      // queue in production so delayed jobs survive restarts.
+      setTimeout(
+        () => {
+          handler(data).catch((err) => logger.error({ err, job: name }, 'delayed inline job failed'));
+        },
+        Math.min(opts.delayMs, MAX_TIMER_MS),
+      ).unref();
+      return;
+    }
+    const p = handler(data)
       .catch((err) => logger.error({ err, job: name }, 'inline job failed'))
       .finally(() => inlinePending.delete(p));
     inlinePending.add(p);

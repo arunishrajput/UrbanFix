@@ -1,8 +1,19 @@
+import { existsSync, readFileSync } from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { z } from 'zod';
 
-const apiRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
+/** The apps/api directory, found by walking up to its package.json (works from src/ and bundled dist/). */
+function findApiRoot(): string {
+  let dir = path.dirname(fileURLToPath(import.meta.url));
+  for (let i = 0; i < 6; i++) {
+    const pkg = path.join(dir, 'package.json');
+    if (existsSync(pkg) && JSON.parse(readFileSync(pkg, 'utf8')).name === '@urbanfix/api') return dir;
+    dir = path.dirname(dir);
+  }
+  return process.cwd();
+}
+const apiRoot = process.env.API_ROOT ?? findApiRoot();
 
 // Load apps/api/.env when present (Node >= 21.7). Real environment variables win.
 if (process.env.NODE_ENV !== 'test') {
@@ -89,6 +100,7 @@ const schema = z.object({
   CITY_LAT: z.coerce.number().default(18.5204),
   CITY_LNG: z.coerce.number().default(73.8567),
 
+  RATE_LIMIT_ENABLED: bool(true),
   RATE_LIMIT_MAX: z.coerce.number().int().default(300),
 });
 

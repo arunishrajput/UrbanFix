@@ -99,14 +99,25 @@ describe('scoreCandidate', () => {
     expect(withPhoto.level).toBe('LIKELY');
   });
 
-  it('lowers the score when photos clearly show something different', () => {
+  it('lowers the score when embeddings show the photos are of different things', () => {
     const withoutPhotos = scoreCandidate(query(), candidate(), opts)!;
     const differentPhotos = scoreCandidate(
+      query({ photos: [{ embedding: [1, 0, 0] }] }),
+      candidate({ photos: [{ embedding: [0, 1, 0] }] }),
+      opts,
+    )!;
+    expect(differentPhotos.score).toBeLessThan(withoutPhotos.score);
+  });
+
+  it('does not treat a pHash mismatch as evidence of a different issue', () => {
+    // Two different shots of the same pile: hashes far apart, no embeddings available.
+    const s = scoreCandidate(
       query({ photos: [{ phash: '0000000000000000' }] }),
       candidate({ photos: [{ phash: 'ffffffffffffffff' }] }),
       opts,
     )!;
-    expect(differentPhotos.score).toBeLessThan(withoutPhotos.score);
+    expect(s.signals.image).toBeNull();
+    expect(s.level).toBe('LIKELY');
   });
 
   it('uses the AI-predicted category when the citizen has not chosen one', () => {

@@ -62,20 +62,21 @@ export async function buildApp() {
   });
   await app.register(cors, { origin: config.WEB_ORIGIN, credentials: true, maxAge: 600 });
   await app.register(cookie);
-  await app.register(rateLimit, {
-    global: true,
-    max: config.RATE_LIMIT_MAX,
-    timeWindow: '1 minute',
-    redis,
-    nameSpace: 'uf:rl:',
-    skipOnError: true,
-    keyGenerator: (req) => req.auth?.id ?? req.ip,
-    errorResponseBuilder: (_req, ctx) => ({
-      statusCode: 429,
-      code: 'RATE_LIMITED',
-      message: `Too many requests. Try again in ${Math.ceil(ctx.ttl / 1000)}s.`,
-    }),
-  });
+  if (config.RATE_LIMIT_ENABLED)
+    await app.register(rateLimit, {
+      global: true,
+      max: config.RATE_LIMIT_MAX,
+      timeWindow: '1 minute',
+      redis,
+      nameSpace: 'uf:rl:',
+      skipOnError: true,
+      keyGenerator: (req) => req.auth?.id ?? req.ip,
+      errorResponseBuilder: (_req, ctx) => ({
+        statusCode: 429,
+        code: 'RATE_LIMITED',
+        message: `Too many requests. Try again in ${Math.ceil(ctx.ttl / 1000)}s.`,
+      }),
+    });
   await app.register(multipart, { limits: { fileSize: maxUploadBytes(), files: 1, fields: 5, parts: 6 } });
 
   if (config.STORAGE_DRIVER === 'local') {

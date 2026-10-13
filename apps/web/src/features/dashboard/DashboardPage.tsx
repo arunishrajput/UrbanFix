@@ -239,7 +239,7 @@ function SlaCell({ row }: { row: ManageIssueRow }) {
   return (
     <span
       className={cn(
-        'font-mono text-xs font-semibold',
+        'whitespace-nowrap font-mono text-xs font-semibold',
         row.overdue ? 'text-cone-ink' : due < 12 * 3_600_000 ? 'text-[#7a5a00] dark:text-lane' : 'text-muted',
       )}
     >
@@ -272,7 +272,7 @@ function IssuesTable({
   return (
     <div className="card overflow-hidden">
       <div className="overflow-x-auto">
-        <table className={cn('w-full text-sm', compact ? 'min-w-[40rem]' : 'min-w-[56rem]')}>
+        <table className={cn('w-full text-sm', compact ? 'min-w-[36rem]' : 'min-w-[56rem]')}>
           <thead className="bg-surface-2 text-left">
             <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-display [&>th]:text-[0.7rem] [&>th]:font-extrabold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted">
               <th>Issue</th>
@@ -280,7 +280,7 @@ function IssuesTable({
               <th>Priority</th>
               {!compact && <th>Ward</th>}
               <th>Assignee</th>
-              <th className="text-right">Support</th>
+              {!compact && <th className="text-right">Support</th>}
               <th>SLA</th>
               {!compact && <th>Updated</th>}
             </tr>
@@ -335,7 +335,7 @@ function IssuesTable({
                     <span className="font-semibold text-[#7a5a00] dark:text-lane">Unassigned</span>
                   )}
                 </td>
-                <td className="text-right font-mono">{r.supportCount}</td>
+                {!compact && <td className="text-right font-mono">{r.supportCount}</td>}
                 <td>
                   <SlaCell row={r} />
                 </td>
@@ -479,7 +479,7 @@ export default function DashboardPage({ mode = 'all' }: { mode?: 'all' | 'assign
       </div>
       {mode === 'all' && <Kpis />}
       <FilterBar />
-      <div className={cn('grid gap-4', layout === 'split' && 'xl:grid-cols-[1.35fr_1fr]')}>
+      <div className={cn('grid gap-4', layout === 'split' && 'xl:grid-cols-[1.7fr_1fr]')}>
         {layout !== 'map' && <IssuesTable data={data} loading={isLoading} compact={layout === 'split'} />}
         {layout !== 'table' && <IssuesMap />}
       </div>

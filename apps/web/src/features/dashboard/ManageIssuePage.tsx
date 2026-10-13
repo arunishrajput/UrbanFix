@@ -82,17 +82,17 @@ function StatusActions({ issue }: { issue: ManageIssueDetail }) {
   );
   const needsPhoto =
     target === 'RESOLVED' && config?.verification.requireCompletionPhoto && issue.workPhotos.length === 0;
+  const waiting = issue.status === 'RESOLVED' && (
+    <p className="mb-2 rounded-xl bg-signal-soft px-3 py-2 text-sm font-medium text-signal-strong">
+      Waiting for citizens to verify the fix.
+    </p>
+  );
   if (!issue.allowedTransitions.length) {
-    return (
-      <p className="text-sm text-muted">
-        {issue.status === 'RESOLVED'
-          ? 'Waiting for citizens to verify the fix.'
-          : 'No status changes available to you.'}
-      </p>
-    );
+    return waiting || <p className="text-sm text-muted">No status changes available to you.</p>;
   }
   return (
     <>
+      {waiting}
       <div className="flex flex-wrap gap-2">
         {issue.allowedTransitions.map((s) => (
           <Button
