@@ -1,0 +1,11 @@
+packages:
+  - apps/*
+  - packages/*
+
+onlyBuiltDependencies:
+  - argon2
+  - esbuild
+  - sharp
+
+ignoredBuiltDependencies:
+  - msgpackr-extract

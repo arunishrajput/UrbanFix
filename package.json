@@ -1,0 +1,39 @@
+{
+  "name": "urbanfix",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Crowdsourced civic issue reporting for Municipal Corporations — citizens report, officials resolve, the community verifies.",
+  "type": "module",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "pnpm --parallel --filter @urbanfix/api --filter @urbanfix/web dev",
+    "dev:api": "pnpm --filter @urbanfix/api dev",
+    "dev:worker": "pnpm --filter @urbanfix/api dev:worker",
+    "dev:web": "pnpm --filter @urbanfix/web dev",
+    "build": "pnpm -r build",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "eslint .",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "test": "pnpm -r test",
+    "test:integration": "pnpm --filter @urbanfix/api test:integration",
+    "db:generate": "pnpm --filter @urbanfix/api db:generate",
+    "db:migrate": "pnpm --filter @urbanfix/api db:migrate",
+    "db:seed": "pnpm --filter @urbanfix/api db:seed",
+    "db:reset": "pnpm --filter @urbanfix/api db:reset"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^24.0.0",
+    "eslint": "^10.12.0",
+    "eslint-plugin-react-hooks": "^7.1.1",
+    "eslint-plugin-react-refresh": "^0.5.7",
+    "globals": "^17.13.0",
+    "prettier": "^3.9.10",
+    "typescript": "~6.0.3",
+    "typescript-eslint": "^8.71.2"
+  }
+}
