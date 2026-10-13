@@ -2,7 +2,7 @@
   "name": "urbanfix",
   "private": true,
   "version": "0.1.0",
-  "description": "Crowdsourced civic issue reporting for Municipal Corporations — citizens report, officials resolve, the community verifies.",
+  "description": "Crowdsourced civic issue reporting for Municipal Corporations \u2014 citizens report, officials resolve, the community verifies.",
   "type": "module",
   "packageManager": "pnpm@10.28.0",
   "engines": {
@@ -23,7 +23,9 @@
     "db:generate": "pnpm --filter @urbanfix/api db:generate",
     "db:migrate": "pnpm --filter @urbanfix/api db:migrate",
     "db:seed": "pnpm --filter @urbanfix/api db:seed",
-    "db:reset": "pnpm --filter @urbanfix/api db:reset"
+    "db:reset": "pnpm --filter @urbanfix/api db:reset",
+    "test:e2e": "node apps/web/e2e/smoke.mjs",
+    "screenshots": "node apps/web/e2e/smoke.mjs --screenshots docs/screenshots"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

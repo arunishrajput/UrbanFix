@@ -1,0 +1,145 @@
+# UrbanFix — full stack. Copy .env.example to .env, then:
+#   docker compose up -d --build
+#   docker compose --profile demo run --rm seed     # optional demo data
+# Open http://localhost:8080
+
+name: urbanfix
+
+x-api-env: &api-env
+  NODE_ENV: production
+  PORT: 4000
+  TRUST_PROXY: 'true'
+  DATABASE_URL: postgres://urbanfix:${POSTGRES_PASSWORD:-urbanfix}@postgres:5432/urbanfix
+  REDIS_URL: redis://redis:6379
+  JWT_ACCESS_SECRET: ${JWT_ACCESS_SECRET:?Set JWT_ACCESS_SECRET in .env (32+ random characters)}
+  PUBLIC_API_URL: ${PUBLIC_URL:-http://localhost:8080}
+  WEB_ORIGIN: ${PUBLIC_URL:-http://localhost:8080}
+  # Cookies need HTTPS when secure; keep false only for plain-http local runs.
+  COOKIE_SECURE: ${COOKIE_SECURE:-false}
+  JOBS_MODE: queue
+  STORAGE_DRIVER: ${STORAGE_DRIVER:-local}
+  UPLOAD_DIR: /app/apps/api/uploads
+  S3_BUCKET: ${S3_BUCKET:-}
+  S3_REGION: ${S3_REGION:-auto}
+  S3_ENDPOINT: ${S3_ENDPOINT:-}
+  S3_ACCESS_KEY_ID: ${S3_ACCESS_KEY_ID:-}
+  S3_SECRET_ACCESS_KEY: ${S3_SECRET_ACCESS_KEY:-}
+  S3_PUBLIC_URL: ${S3_PUBLIC_URL:-}
+  GEMINI_API_KEY: ${GEMINI_API_KEY:-}
+  GEMINI_MODELS: ${GEMINI_MODELS:-gemini-flash-latest,gemini-flash-lite-latest}
+  GEOCODER_URL: ${GEOCODER_URL:-https://nominatim.openstreetmap.org}
+  GEOCODER_EMAIL: ${GEOCODER_EMAIL:-}
+  VAPID_PUBLIC_KEY: ${VAPID_PUBLIC_KEY:-}
+  VAPID_PRIVATE_KEY: ${VAPID_PRIVATE_KEY:-}
+  VAPID_SUBJECT: ${VAPID_SUBJECT:-mailto:admin@urbanfix.local}
+  CITY_NAME: ${CITY_NAME:-Pune}
+  CITY_LAT: ${CITY_LAT:-18.5204}
+  CITY_LNG: ${CITY_LNG:-73.8567}
+  LOG_LEVEL: ${LOG_LEVEL:-info}
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: urbanfix
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-urbanfix}
+      POSTGRES_DB: urbanfix
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U urbanfix -d urbanfix']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'yes']
+    volumes:
+      - redisdata:/data
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+    restart: unless-stopped
+
+  migrate:
+    build: { context: ., dockerfile: infra/docker/api.Dockerfile }
+    image: urbanfix-api
+    command: ['node', 'dist/migrate.js']
+    environment: *api-env
+    depends_on:
+      postgres: { condition: service_healthy }
+      redis: { condition: service_healthy }
+    restart: 'no'
+
+  api:
+    image: urbanfix-api
+    environment: *api-env
+    volumes:
+      - uploads:/app/apps/api/uploads
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  worker:
+    image: urbanfix-api
+    command: ['node', '--enable-source-maps', 'dist/worker.js']
+    environment: *api-env
+    volumes:
+      - uploads:/app/apps/api/uploads
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+      redis: { condition: service_healthy }
+    restart: unless-stopped
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/docker/web.Dockerfile
+      args:
+        VITE_MAP_TILE_URL: ${VITE_MAP_TILE_URL:-}
+        VITE_MAP_ATTRIBUTION: ${VITE_MAP_ATTRIBUTION:-}
+        VITE_SHOW_DEMO_ACCOUNTS: ${VITE_SHOW_DEMO_ACCOUNTS:-false}
+    image: urbanfix-web
+    ports:
+      - '${WEB_PORT:-8080}:80'
+    depends_on:
+      - api
+    restart: unless-stopped
+
+  # Demo data: docker compose --profile demo run --rm seed
+  seed:
+    image: urbanfix-api
+    profiles: ['demo']
+    command: ['node', 'dist/seed.js']
+    environment: *api-env
+    volumes:
+      - uploads:/app/apps/api/uploads
+    depends_on:
+      migrate: { condition: service_completed_successfully }
+
+  # S3-compatible storage for local testing: docker compose --profile s3 up -d
+  # then set STORAGE_DRIVER=s3, S3_ENDPOINT=http://minio:9000, S3_BUCKET=urbanfix,
+  # S3_PUBLIC_URL=http://localhost:9000/urbanfix and the access keys below.
+  minio:
+    image: minio/minio:RELEASE.2025-04-22T22-12-26Z
+    profiles: ['s3']
+    command: ['server', '/data', '--console-address', ':9001']
+    environment:
+      MINIO_ROOT_USER: ${S3_ACCESS_KEY_ID:-urbanfix}
+      MINIO_ROOT_PASSWORD: ${S3_SECRET_ACCESS_KEY:-urbanfix-secret}
+    ports:
+      - '9000:9000'
+      - '9001:9001'
+    volumes:
+      - miniodata:/data
+
+volumes:
+  pgdata:
+  redisdata:
+  uploads:
+  miniodata:

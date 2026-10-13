@@ -1,0 +1,29 @@
+# Infrastructure only, for local development with `pnpm dev`:
+#   docker compose -f docker-compose.dev.yml up -d
+name: urbanfix-dev
+
+services:
+  postgres:
+    image: postgis/postgis:16-3.4
+    environment:
+      POSTGRES_USER: urbanfix
+      POSTGRES_PASSWORD: urbanfix
+      POSTGRES_DB: urbanfix
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata-dev:/var/lib/postgresql/data
+      - ./infra/docker/init-test-db.sql:/docker-entrypoint-initdb.d/10-test-db.sql:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U urbanfix -d urbanfix']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - '6379:6379'
+
+volumes:
+  pgdata-dev:
