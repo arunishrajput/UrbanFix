@@ -216,14 +216,25 @@ export function scoreCandidate(
     level: duplicateLevelFor(score),
     signals,
     distanceM: candidate.distanceM,
-    reasons: buildReasons(signals, candidate, opts.categoryNames ?? {}),
+    reasons: buildReasons(
+      signals,
+      candidate,
+      opts.categoryNames ?? {},
+      sameFile(query.photos, candidate.photos),
+    ),
   };
+}
+
+/** True when the citizen uploaded a byte-identical file to one already on the issue. */
+function sameFile(query: PhotoSignature[], candidate: PhotoSignature[]): boolean {
+  return query.some((q) => q.sha256 && candidate.some((c) => c.sha256 === q.sha256));
 }
 
 function buildReasons(
   signals: Signals,
   candidate: DuplicateCandidate,
   names: Record<string, string>,
+  identicalFile: boolean,
 ): DuplicateReason[] {
   const reasons: DuplicateReason[] = [];
   const name = names[candidate.categorySlug] ?? candidate.categorySlug;
@@ -232,7 +243,7 @@ function buildReasons(
     reasons.push({ code: 'RELATED_CATEGORY', label: `Related category: ${name}` });
   reasons.push({ code: 'NEARBY', label: `${formatDistance(candidate.distanceM)} away` });
   if (signals.image !== null) {
-    if (signals.image >= 0.999) reasons.push({ code: 'IDENTICAL_PHOTO', label: 'Same photo' });
+    if (identicalFile) reasons.push({ code: 'IDENTICAL_PHOTO', label: 'Same photo' });
     else if (signals.image >= 0.75) reasons.push({ code: 'SIMILAR_PHOTO', label: 'Very similar photo' });
     else if (signals.image >= 0.4) reasons.push({ code: 'SIMILAR_PHOTO', label: 'Similar photo' });
   }

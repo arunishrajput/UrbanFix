@@ -36,4 +36,14 @@ export default tseslint.config(
       'react-refresh/only-export-components': ['warn', { allowConstantExport: true }],
     },
   },
+  {
+    // Browser smoke tests run in Node but also ship code into the page.
+    files: ['apps/web/e2e/**/*.{js,mjs}'],
+    languageOptions: { globals: { ...globals.node, ...globals.browser } },
+  },
+  {
+    // Route table and chart helpers are not component modules; fast refresh doesn't apply.
+    files: ['apps/web/src/app/router.tsx', 'apps/web/src/features/analytics/chart-kit.tsx'],
+    rules: { 'react-refresh/only-export-components': 'off' },
+  },
 );

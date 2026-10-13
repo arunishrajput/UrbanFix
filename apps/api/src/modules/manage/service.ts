@@ -154,6 +154,7 @@ export async function managedIssueDetail(auth: AuthContext, issueId: string): Pr
   const canWork = auth.role !== 'STAFF' || issue.assigneeId === auth.id;
   return {
     ...detail,
+    priorityLocked: issue.priorityLocked,
     reports: publicReports.map((r) => ({
       ...r,
       reporterId: byReport.get(r.id)?.reporterId ?? '',

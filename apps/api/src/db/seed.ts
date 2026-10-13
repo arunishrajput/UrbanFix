@@ -640,7 +640,9 @@ async function seed() {
     });
 
     for (const [k, joiner] of joiners.entries()) {
-      const at = new Date(Math.min(NOW - HOUR, t0 + (k + 1) * int(3, 30) * HOUR));
+      // Joins happen while the issue is still open (before it was resolved).
+      const latest = (resolvedAt?.getTime() ?? NOW) - HOUR;
+      const at = new Date(Math.max(t0 + 30 * 60_000, Math.min(latest, t0 + (k + 1) * int(3, 30) * HOUR)));
       const jReport = randomUUID();
       const near = jitter(plan.lat, plan.lng, 15);
       await db.insert(schema.reports).values({
@@ -815,16 +817,14 @@ async function seed() {
         const at = closedAt!;
         const evidence = await storePhoto(await reshoot(baseImage, r), uid, 'VERIFICATION');
         photoRows.push({ ...evidence, issueId, reportId: null, createdAt: at });
-        await db
-          .insert(schema.verificationResponses)
-          .values({
-            roundId,
-            userId: uid,
-            response: 'NOT_FIXED',
-            comment: 'Still exactly the same as before.',
-            photoIds: [evidence.id],
-            createdAt: at,
-          });
+        await db.insert(schema.verificationResponses).values({
+          roundId,
+          userId: uid,
+          response: 'NOT_FIXED',
+          comment: 'Still exactly the same as before.',
+          photoIds: [evidence.id],
+          createdAt: at,
+        });
         events.push({
           issueId,
           actorId: uid,

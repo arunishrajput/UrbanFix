@@ -167,3 +167,15 @@ describe('duplicateHeadline', () => {
     expect(duplicateHeadline('Garbage', 12, 'RESOLVED')).toMatch(/still not fixed/);
   });
 });
+
+describe('photo reasons', () => {
+  it('only says "Same photo" for byte-identical files', () => {
+    const similar = scoreCandidate(
+      query({ photos: [{ sha256: 'a', embedding: [1, 0] }] }),
+      candidate({ photos: [{ sha256: 'b', embedding: [1, 0] }] }),
+      opts,
+    )!;
+    expect(similar.reasons.map((r) => r.label)).toContain('Very similar photo');
+    expect(similar.reasons.some((r) => r.code === 'IDENTICAL_PHOTO')).toBe(false);
+  });
+});

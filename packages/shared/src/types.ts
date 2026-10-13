@@ -298,6 +298,8 @@ export interface ManageStats {
 }
 
 export interface ManageIssueDetail extends IssueDetail {
+  /** Priority was set by an official; automatic adjustments are off. */
+  priorityLocked: boolean;
   reports: (ReportDTO & { reporterId: string; reporterEmail: string | null })[];
   allowedTransitions: IssueStatus[];
   flaggedReports: number;
@@ -454,4 +456,14 @@ export interface ClientToServerEvents {
   'issue:watch': (issueId: string) => void;
   'issue:unwatch': (issueId: string) => void;
   'map:watch': () => void;
+}
+
+export interface PublicStats {
+  reportedLast30Days: number;
+  fixedLast30Days: number;
+  verifiedTotal: number;
+  openNow: number;
+  activeCitizens: number;
+  duplicatesAvoided: number;
+  joinRate: number;
 }

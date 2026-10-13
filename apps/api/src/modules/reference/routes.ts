@@ -42,6 +42,37 @@ export const referenceRoutes: FastifyPluginAsyncZod = async (app) => {
 
   app.get('/wards', { schema: { tags: ['reference'] } }, () => listWards());
 
+  /** City-wide numbers for the public home page. */
+  app.get('/stats/public', { schema: { tags: ['reference'] } }, async () => {
+    const res = await db.execute<{
+      reported_30d: number;
+      fixed_30d: number;
+      verified_total: number;
+      open_now: number;
+      citizens_30d: number;
+      joins_30d: number;
+      reports_30d: number;
+    }>(sql`
+      SELECT
+        (SELECT count(*)::int FROM issues WHERE merged_into_id IS NULL AND created_at >= now() - interval '30 days') AS reported_30d,
+        (SELECT count(*)::int FROM issues WHERE resolved_at >= now() - interval '30 days' OR verified_at >= now() - interval '30 days') AS fixed_30d,
+        (SELECT count(*)::int FROM issues WHERE status = 'VERIFIED') AS verified_total,
+        (SELECT count(*)::int FROM issues WHERE merged_into_id IS NULL AND status IN ('PENDING','IN_PROGRESS','REOPENED')) AS open_now,
+        (SELECT count(DISTINCT reporter_id)::int FROM reports WHERE created_at >= now() - interval '30 days') AS citizens_30d,
+        (SELECT count(*)::int FROM reports WHERE source <> 'NEW' AND created_at >= now() - interval '30 days') AS joins_30d,
+        (SELECT count(*)::int FROM reports WHERE created_at >= now() - interval '30 days') AS reports_30d`);
+    const r = res.rows[0]!;
+    return {
+      reportedLast30Days: r.reported_30d,
+      fixedLast30Days: r.fixed_30d,
+      verifiedTotal: r.verified_total,
+      openNow: r.open_now,
+      activeCitizens: r.citizens_30d,
+      duplicatesAvoided: r.joins_30d,
+      joinRate: r.reports_30d ? Math.round((r.joins_30d / r.reports_30d) * 1000) / 1000 : 0,
+    };
+  });
+
   /** Public runtime configuration for the web app. */
   app.get('/config', { schema: { tags: ['reference'] } }, async () => {
     const settings = await getSettings();

@@ -1,0 +1,252 @@
+@import 'tailwindcss';
+@import '@fontsource-variable/overpass';
+@import '@fontsource-variable/public-sans';
+@import '@fontsource-variable/overpass-mono';
+@import 'leaflet/dist/leaflet.css';
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+/*
+ * UrbanFix — street-signage identity.
+ * Concrete surfaces, signboard green, lane-marking yellow, traffic-cone orange.
+ * Overpass (Highway Gothic heritage) for display, Public Sans for reading,
+ * Overpass Mono for references, coordinates and timestamps.
+ */
+:root {
+  --bg: #eef0ec;
+  --surface: #ffffff;
+  --surface-2: #f6f7f4;
+  --ink: #1e2124;
+  --muted: #5b6168;
+  --line: #d9ddd7;
+  --signal: #0b6e4f;
+  --signal-strong: #08553d;
+  --signal-soft: #dcefe6;
+  --lane: #f5c518;
+  --lane-ink: #3d3000;
+  --cone: #e8541e;
+  --cone-ink: #b43d0e;
+  --asphalt: #24272b;
+  --focus: #0b6e4f;
+  /* Chart series (validated: lightness, chroma, CVD and contrast on the light surface). */
+  --series-1: #2a78d6;
+  --series-2: #0f8a5f;
+  --grid: #e6e8e3;
+  color-scheme: light;
+}
+
+.dark {
+  --bg: #15171a;
+  --surface: #1e2125;
+  --surface-2: #25292e;
+  --ink: #eceeea;
+  --muted: #a3a9b0;
+  --line: #31363c;
+  --signal: #34b98a;
+  --signal-strong: #5fd3a8;
+  --signal-soft: #173a2e;
+  --lane: #f5c518;
+  --lane-ink: #2b2200;
+  --cone: #ff7a45;
+  --cone-ink: #ff9a70;
+  --asphalt: #0f1113;
+  --focus: #f5c518;
+  --series-1: #3987e5;
+  --series-2: #199e70;
+  --grid: #2b2f34;
+  color-scheme: dark;
+}
+
+@theme inline {
+  --color-bg: var(--bg);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-ink: var(--ink);
+  --color-muted: var(--muted);
+  --color-line: var(--line);
+  --color-signal: var(--signal);
+  --color-signal-strong: var(--signal-strong);
+  --color-signal-soft: var(--signal-soft);
+  --color-lane: var(--lane);
+  --color-lane-ink: var(--lane-ink);
+  --color-cone: var(--cone);
+  --color-cone-ink: var(--cone-ink);
+  --color-asphalt: var(--asphalt);
+
+  --font-display: 'Overpass Variable', 'Overpass', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Public Sans Variable', 'Public Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'Overpass Mono Variable', 'Overpass Mono', ui-monospace, monospace;
+
+  --radius-card: 1.25rem;
+  --shadow-card: 0 1px 0 rgb(0 0 0 / 0.04), 0 8px 24px -12px rgb(30 33 36 / 0.18);
+  --shadow-float: 0 12px 40px -12px rgb(30 33 36 / 0.35);
+}
+
+@layer base {
+  html {
+    -webkit-tap-highlight-color: transparent;
+    text-rendering: optimizeLegibility;
+  }
+  body {
+    @apply bg-bg text-ink font-sans antialiased;
+    min-height: 100dvh;
+  }
+  h1,
+  h2,
+  h3 {
+    @apply font-display;
+    letter-spacing: -0.015em;
+  }
+  :focus-visible {
+    outline: 3px solid var(--focus);
+    outline-offset: 2px;
+    border-radius: 6px;
+  }
+  ::selection {
+    background: var(--lane);
+    color: var(--lane-ink);
+  }
+}
+
+@layer components {
+  /* Eyebrow labels styled like stencilled signage. */
+  .sign-label {
+    @apply font-display text-[0.7rem] font-extrabold uppercase tracking-[0.14em] text-muted;
+  }
+  .card {
+    @apply rounded-[var(--radius-card)] border border-line bg-surface shadow-[var(--shadow-card)];
+  }
+  .field {
+    @apply w-full rounded-xl border border-line bg-surface px-3.5 py-2.5 text-[0.95rem] text-ink placeholder:text-muted/70 transition-colors focus:border-signal focus:outline-none focus:ring-2 focus:ring-signal/25;
+  }
+}
+
+/* ---------- the lane line (signature) ---------- */
+
+.lane-line {
+  --dash: 14px;
+  --gap: 12px;
+  background-image: repeating-linear-gradient(
+    to bottom,
+    var(--lane) 0 var(--dash),
+    transparent var(--dash) calc(var(--dash) + var(--gap))
+  );
+}
+.lane-line-h {
+  --dash: 18px;
+  --gap: 12px;
+  background-image: repeating-linear-gradient(
+    to right,
+    var(--lane) 0 var(--dash),
+    transparent var(--dash) calc(var(--dash) + var(--gap))
+  );
+}
+.lane-moving {
+  animation: lane-drive 0.9s linear infinite;
+}
+.lane-line-h.lane-moving {
+  animation-name: lane-drive-h;
+}
+@keyframes lane-drive {
+  to {
+    background-position: 0 calc(var(--dash) + var(--gap));
+  }
+}
+@keyframes lane-drive-h {
+  to {
+    background-position: calc(var(--dash) + var(--gap)) 0;
+  }
+}
+
+/* Asphalt texture for dark "road" panels. */
+.asphalt {
+  background-color: var(--asphalt);
+  background-image:
+    radial-gradient(rgb(255 255 255 / 0.05) 1px, transparent 1.2px),
+    radial-gradient(rgb(0 0 0 / 0.25) 1px, transparent 1.2px);
+  background-size:
+    7px 7px,
+    11px 11px;
+  background-position:
+    0 0,
+    3px 5px;
+  color: #f3f4f1;
+}
+
+/* Perforated edge for the complaint receipt. */
+.perforated {
+  -webkit-mask: radial-gradient(circle 7px at 7px 50%, transparent 98%, #000) -7px 0 / 100% 100% repeat-y;
+}
+
+.skeleton {
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--line) 37%, var(--surface-2) 63%);
+  background-size: 400% 100%;
+  animation: shimmer 1.4s ease infinite;
+}
+@keyframes shimmer {
+  0% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0 50%;
+  }
+}
+
+.pb-safe {
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+/* ---------- Leaflet ---------- */
+
+.leaflet-container {
+  font-family: var(--font-sans);
+  background: var(--surface-2);
+}
+.leaflet-control-attribution {
+  font-size: 10px;
+}
+.dark .leaflet-tile-pane {
+  filter: invert(0.92) hue-rotate(180deg) brightness(0.95) contrast(0.9) saturate(0.6);
+}
+.uf-marker {
+  background: none;
+  border: none;
+}
+.uf-pin {
+  transform-origin: 50% 100%;
+  animation: pin-drop 0.45s cubic-bezier(0.2, 1.4, 0.4, 1) both;
+}
+@keyframes pin-drop {
+  from {
+    transform: translateY(-14px) scale(0.6);
+    opacity: 0;
+  }
+}
+.uf-pulse::after {
+  content: '';
+  position: absolute;
+  inset: -6px;
+  border-radius: 999px;
+  border: 3px solid var(--lane);
+  animation: pulse 1.6s ease-out infinite;
+}
+@keyframes pulse {
+  from {
+    transform: scale(0.7);
+    opacity: 1;
+  }
+  to {
+    transform: scale(1.6);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}

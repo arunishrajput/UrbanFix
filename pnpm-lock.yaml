@@ -153,10 +153,13 @@ importers:
 
   apps/web:
     dependencies:
-      '@fontsource-variable/inter':
+      '@fontsource-variable/overpass':
         specifier: ^5.3.0
         version: 5.3.0
-      '@fontsource-variable/plus-jakarta-sans':
+      '@fontsource-variable/overpass-mono':
+        specifier: ^5.3.0
+        version: 5.3.0
+      '@fontsource-variable/public-sans':
         specifier: ^5.3.0
         version: 5.3.0
       '@hookform/resolvers':
@@ -195,6 +198,9 @@ importers:
       leaflet.heat:
         specifier: ^0.2.0
         version: 0.2.0
+      lucide:
+        specifier: ^1.56.0
+        version: 1.56.0
       lucide-react:
         specifier: ^1.56.0
         version: 1.56.0(@types/react@19.3.0)(react@19.3.0)
@@ -283,6 +289,9 @@ importers:
       vitest:
         specifier: ^5.0.4
         version: 5.0.4(@types/node@24.19.2)(jsdom@30.1.2)(vite@8.3.4(@types/node@24.19.2)(esbuild@0.28.2)(jiti@2.7.0)(terser@5.51.2)(tsx@4.23.15)(yaml@2.9.1))
+      workbox-precaching:
+        specifier: ^7.4.1
+        version: 7.4.1
 
   packages/shared:
     dependencies:
@@ -1510,11 +1519,14 @@ packages:
   '@floating-ui/utils@0.2.12':
     resolution: {integrity: sha512-HpCo8tmWzLVad5s2d19EhAz5zqrrQ6s69qd6moPMQvkOuSwDT1YgRfWSVuc4ennqrgv3OHppiOGMQ7oC13yIww==}
 
-  '@fontsource-variable/inter@5.3.0':
-    resolution: {integrity: sha512-OupL48va4JNofb97w6NYeF9S7W/kHNKM0Er8Dem5nqi4jeOLrVJDoE8tZEpnMJmtkvNbB1EIPPwHcdkF6b1oUA==}
+  '@fontsource-variable/overpass-mono@5.3.0':
+    resolution: {integrity: sha512-qtESPvSFvq7/v7lQIUUsIyDlFZEWapNF1eM9lkQUugO6pmgen0euJOIAMJLyjtGTtOHCbE7XOe2ym0Nh9ccR0w==}
 
-  '@fontsource-variable/plus-jakarta-sans@5.3.0':
-    resolution: {integrity: sha512-/l/4r0yyWK9JzAlmA0LiYgGgmJe/Gswt4jTJEzr5QhJfwMbvJZDmYWyW0M4X7yCK69BajMVlV/Lx8g7WDc1+sw==}
+  '@fontsource-variable/overpass@5.3.0':
+    resolution: {integrity: sha512-HviVvVvKCwhXjxM61GjnCW2cKoeEWFkoBANaArzIHliC+7mV4lmKKIBAa0O7E5ISHnkV3sihgOHXxzpnsbP3Xg==}
+
+  '@fontsource-variable/public-sans@5.3.0':
+    resolution: {integrity: sha512-AVfkmAt50BMXWpOO21FAntiJFKGX6xTc2dSL8dxtDteONe9IuRXJWGbs0EbG955vAMCq23ENeuopuW87cGWDSQ==}
 
   '@hookform/resolvers@5.9.1':
     resolution: {integrity: sha512-7b7vsbraJxKgjVSA1Nur9tLwj539WGJUBLA7QNvXnFoT2pM5Z7G+6rlukk4B2/QrTZy6huRtH6wKeESPKuIr6w==}
@@ -4134,6 +4146,9 @@ packages:
       '@types/react':
         optional: true
 
+  lucide@1.56.0:
+    resolution: {integrity: sha512-BOrr2xku0dGUzWvdBZK3NlEdEzcEvXoLRyGvC27lyFB1tSL7Lc7vW61CKeVcw92K2L9y6aNKS7fJ8fVzw/MXIw==}
+
   luxon@3.7.2:
     resolution: {integrity: sha512-vtEhXh/gNjI9Yg1u4jX/0YVPMvxzHuGgCm6tC5kZyb08yjGWGnqAjGJvcXbqQR2P3MyMEFnRbpcdFS6PBcLqew==}
     engines: {node: '>=12'}
@@ -6573,9 +6588,11 @@ snapshots:
 
   '@floating-ui/utils@0.2.12': {}
 
-  '@fontsource-variable/inter@5.3.0': {}
+  '@fontsource-variable/overpass-mono@5.3.0': {}
 
-  '@fontsource-variable/plus-jakarta-sans@5.3.0': {}
+  '@fontsource-variable/overpass@5.3.0': {}
+
+  '@fontsource-variable/public-sans@5.3.0': {}
 
   '@hookform/resolvers@5.9.1(@standard-schema/spec@1.1.0)(ajv@8.20.0)(react-hook-form@7.90.0(@types/react@19.3.0)(react@19.3.0))(zod@4.6.7)':
     dependencies:
@@ -9022,6 +9039,8 @@ snapshots:
       react: 19.3.0
     optionalDependencies:
       '@types/react': 19.3.0
+
+  lucide@1.56.0: {}
 
   luxon@3.7.2: {}
 

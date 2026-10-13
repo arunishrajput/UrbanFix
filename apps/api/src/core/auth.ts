@@ -54,3 +54,8 @@ export function generateRefreshToken() {
 export const sha256 = (value: string | Buffer) => createHash('sha256').update(value).digest('hex');
 
 export const REFRESH_COOKIE = 'uf_refresh';
+/**
+ * Non-sensitive hint ("a session exists") readable by the web app, so it only
+ * attempts a silent refresh when there is something to refresh.
+ */
+export const SESSION_HINT_COOKIE = 'uf_session';

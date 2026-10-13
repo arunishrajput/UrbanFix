@@ -5,6 +5,7 @@ import type { AuthResponse, AuthUser, LoginInput, RegisterInput, UpgradeGuestInp
 import { config } from '../../config';
 import {
   REFRESH_COOKIE,
+  SESSION_HINT_COOKIE,
   generateRefreshToken,
   hashPassword,
   sha256,
@@ -60,6 +61,7 @@ async function issueSession(
     })
     .returning({ id: refreshTokens.id });
   reply.setCookie(REFRESH_COOKIE, token, cookieOptions());
+  reply.setCookie(SESSION_HINT_COOKIE, '1', { ...cookieOptions(), httpOnly: false, path: '/' });
   await db.update(users).set({ lastSeenAt: new Date() }).where(eq(users.id, user.id));
   const accessToken = await signAccessToken({
     id: user.id,
@@ -132,7 +134,7 @@ export async function refresh(request: FastifyRequest, reply: FastifyReply): Pro
       .set({ revokedAt: new Date() })
       .where(and(eq(refreshTokens.familyId, row.familyId), isNull(refreshTokens.revokedAt)));
     request.log.warn({ userId: row.userId, familyId: row.familyId }, 'refresh token reuse detected');
-    reply.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
+    clearSessionCookies(reply);
     throw unauthorized('Session expired');
   }
   if (row.expiresAt < new Date()) throw unauthorized('Session expired');
@@ -159,7 +161,12 @@ export async function logout(request: FastifyRequest, reply: FastifyReply) {
         .where(and(eq(refreshTokens.familyId, row.familyId), isNull(refreshTokens.revokedAt)));
     }
   }
+  clearSessionCookies(reply);
+}
+
+function clearSessionCookies(reply: FastifyReply) {
   reply.clearCookie(REFRESH_COOKIE, { path: '/api/v1/auth' });
+  reply.clearCookie(SESSION_HINT_COOKIE, { path: '/' });
 }
 
 /** Turns a guest into a full account, keeping every report, support and notification. */
