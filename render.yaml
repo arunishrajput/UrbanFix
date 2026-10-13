@@ -1,0 +1,67 @@
+# Render Blueprint: UrbanFix on Render's free plan as a single web service.
+# Database, Redis and photo storage come from other free tiers (Neon, Upstash,
+# Supabase Storage). Step-by-step guide: docs/deploy-free.md
+#
+# Render → New → Blueprint → pick this repo. Values marked `sync: false` are
+# asked for once when the Blueprint is created.
+services:
+  - type: web
+    name: urbanfix
+    runtime: docker
+    plan: free
+    region: singapore
+    dockerfilePath: ./infra/docker/app.Dockerfile
+    dockerContext: .
+    healthCheckPath: /healthz
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: 'true'
+      # Migrations are idempotent; running them on boot replaces a separate migrate step.
+      - key: MIGRATE_ON_START
+        value: 'true'
+      - key: JWT_ACCESS_SECRET
+        generateValue: true
+
+      # PUBLIC_API_URL and WEB_ORIGIN default to RENDER_EXTERNAL_URL (set by Render).
+      # The web app and API share one origin, so a custom domain needs no changes.
+
+      - key: DATABASE_URL # Neon connection string (…?sslmode=require)
+        sync: false
+      - key: DATABASE_POOL_MAX
+        value: '5'
+      - key: REDIS_URL # Upstash rediss://default:…@…:6379
+        sync: false
+
+      - key: STORAGE_DRIVER
+        value: s3
+      - key: S3_BUCKET
+        value: urbanfix
+      - key: S3_ENDPOINT # https://<ref>.supabase.co/storage/v1/s3
+        sync: false
+      - key: S3_REGION # your Supabase project region, e.g. ap-southeast-1
+        sync: false
+      - key: S3_ACCESS_KEY_ID
+        sync: false
+      - key: S3_SECRET_ACCESS_KEY
+        sync: false
+      - key: S3_PUBLIC_URL # https://<ref>.supabase.co/storage/v1/object/public/urbanfix
+        sync: false
+
+      - key: GEMINI_API_KEY # optional: without it, heuristics categorise photos
+        sync: false
+      - key: GEOCODER_EMAIL # contact address sent to Nominatim (its usage policy asks for one)
+        sync: false
+
+      # Show the demo logins on the sign-in page (build-time flag for the web app).
+      - key: VITE_SHOW_DEMO_ACCOUNTS
+        value: 'true'
+
+      # Keep memory inside the free instance's 512 MB.
+      - key: NODE_OPTIONS
+        value: --max-old-space-size=320
+      - key: MALLOC_ARENA_MAX
+        value: '2'
+      - key: VIPS_CONCURRENCY
+        value: '1'

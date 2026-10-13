@@ -12,6 +12,7 @@ export interface JobPayloads {
   'analyze-photo': { photoId: string };
   notify: { notificationIds: string[] };
   'close-verification': { roundId: string };
+  'close-expired-verifications': Record<string, never>;
   'award-badges': { userId: string };
   'refresh-analytics': Record<string, never>;
   'sla-check': Record<string, never>;
@@ -32,6 +33,7 @@ export const JOB_QUEUE: Record<JobName, QueueName> = {
   'analyze-photo': 'ai',
   notify: 'notifications',
   'close-verification': 'workflow',
+  'close-expired-verifications': 'maintenance',
   'award-badges': 'workflow',
   'refresh-analytics': 'maintenance',
   'sla-check': 'maintenance',

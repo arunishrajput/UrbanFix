@@ -5,12 +5,15 @@ import { closeRealtime, attachRealtime } from './core/realtime';
 import { redis } from './core/redis';
 import { pool } from './db/client';
 import { runMigrations } from './db/migrate';
+import { startInlineScheduler } from './jobs/schedule';
 
 async function main() {
   if (process.env.MIGRATE_ON_START === 'true') await runMigrations();
   const app = await buildApp();
   attachRealtime(app.server);
   await app.listen({ host: config.HOST, port: config.PORT });
+  // Without a worker, the API runs recurring maintenance itself.
+  if (config.JOBS_MODE === 'inline') startInlineScheduler();
 
   let closing = false;
   const shutdown = async (signal: string) => {

@@ -1,5 +1,6 @@
 import { randomUUID } from 'node:crypto';
 import { mkdirSync } from 'node:fs';
+import path from 'node:path';
 import cookie from '@fastify/cookie';
 import cors from '@fastify/cors';
 import helmet from '@fastify/helmet';
@@ -22,6 +23,7 @@ import { loggerOptions } from './core/logger';
 import { resolveAuth } from './core/rbac';
 import { redis } from './core/redis';
 import { db } from './db/client';
+import { markActivity } from './jobs/schedule';
 import { adminRoutes } from './modules/admin/routes';
 import { analyticsRoutes } from './modules/analytics/routes';
 import { authRoutes } from './modules/auth/routes';
@@ -46,13 +48,17 @@ export async function buildApp() {
 
   app.setValidatorCompiler(validatorCompiler);
   app.setSerializerCompiler(serializerCompiler);
-  registerErrorHandler(app);
+  registerErrorHandler(app, { spaFallback: Boolean(config.WEB_DIST_DIR) });
 
   app.decorateRequest('auth', null);
   // Resolve the caller before rate limiting so limits can be keyed per user.
   app.addHook('onRequest', resolveAuth);
   app.addHook('onSend', async (req, reply) => {
     reply.header('x-request-id', req.id);
+  });
+  // Inline maintenance only runs after real use, so an idle deploy lets the database sleep.
+  app.addHook('onRequest', async (req) => {
+    if (req.url.startsWith('/api/')) markActivity();
   });
 
   await app.register(helmet, {
@@ -92,6 +98,27 @@ export async function buildApp() {
     });
   }
 
+  if (config.WEB_DIST_DIR) {
+    // Single-service deploys: serve the built SPA from this origin. Unknown paths that
+    // want HTML get index.html from the not-found handler (client-side routing).
+    const webRoot = path.resolve(config.WEB_DIST_DIR);
+    await app.register(fastifyStatic, {
+      root: webRoot,
+      prefix: '/',
+      cacheControl: false,
+      setHeaders: (res, filePath) => {
+        // Vite fingerprints everything under assets/; other files must revalidate.
+        const hashed = path.relative(webRoot, filePath).startsWith(`assets${path.sep}`);
+        res.header('cache-control', hashed ? 'public, max-age=31536000, immutable' : 'no-cache');
+        // Same headers nginx adds in the multi-container setup. The referrer policy must
+        // send the origin: the public OSM tile servers require a Referer.
+        res.header('referrer-policy', 'strict-origin-when-cross-origin');
+        res.header('permissions-policy', 'camera=(self), geolocation=(self), microphone=()');
+        res.header('x-frame-options', 'DENY');
+      },
+    });
+  }
+
   await app.register(swagger, {
     openapi: {
       info: {
@@ -106,7 +133,12 @@ export async function buildApp() {
   });
   await app.register(swaggerUi, { routePrefix: '/api/docs' });
 
-  app.get('/healthz', { logLevel: 'warn', schema: { hide: true } }, async () => ({ status: 'ok' }));
+  // Cheap liveness probe (uptime monitors hit it): no database, no Redis, no rate limit.
+  app.get(
+    '/healthz',
+    { logLevel: 'warn', schema: { hide: true }, config: { rateLimit: false } },
+    async () => ({ status: 'ok' }),
+  );
   app.get('/readyz', { logLevel: 'warn', schema: { hide: true } }, async (_req, reply) => {
     try {
       await Promise.all([db.execute(sql`SELECT 1`), redis.ping()]);

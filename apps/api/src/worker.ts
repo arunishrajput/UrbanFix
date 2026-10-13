@@ -9,6 +9,7 @@ import { QUEUES, closeQueues, getJobHandler, getQueue, type QueueName } from './
 import { logger } from './core/logger';
 import { createBullConnection, redis } from './core/redis';
 import { pool } from './db/client';
+import { MAINTENANCE_SCHEDULE } from './jobs/schedule';
 
 if (config.JOBS_MODE !== 'queue') {
   logger.warn('JOBS_MODE is not "queue"; the API runs jobs inline and this worker has nothing to do');
@@ -36,17 +37,9 @@ const workers = (Object.keys(QUEUES) as QueueName[]).map((name) => {
 
 async function schedule() {
   const maintenance = getQueue('maintenance');
-  await maintenance.upsertJobScheduler(
-    'refresh-analytics',
-    { every: 15 * 60_000 },
-    { name: 'refresh-analytics', data: {} },
-  );
-  await maintenance.upsertJobScheduler('sla-check', { every: 60 * 60_000 }, { name: 'sla-check', data: {} });
-  await maintenance.upsertJobScheduler(
-    'cleanup-uploads',
-    { every: 6 * 60 * 60_000 },
-    { name: 'cleanup-uploads', data: {} },
-  );
+  for (const { name, everyMs } of MAINTENANCE_SCHEDULE) {
+    await maintenance.upsertJobScheduler(name, { every: everyMs }, { name, data: {} });
+  }
 }
 
 schedule()

@@ -215,6 +215,7 @@ list.
 | `PUBLIC_API_URL`, `WEB_ORIGIN`                  | Public origin for photo URLs; allowed browser origins (CORS and Socket.IO)   |
 | `COOKIE_SECURE`                                 | `true` behind HTTPS (the default in production)                              |
 | `JOBS_MODE`                                     | `queue` (BullMQ worker) or `inline` (single process)                         |
+| `WEB_DIST_DIR`                                  | Built web app to serve from the API (single-container deploys)               |
 | `STORAGE_DRIVER`, `S3_*`                        | `local` volume or S3-compatible object storage                               |
 | `GEMINI_API_KEY`, `GEMINI_MODELS`, `AI_ENABLED` | AI analysis                                                                  |
 | `GEOCODER_URL`, `GEOCODER_EMAIL`                | Nominatim-compatible reverse geocoding (cached and throttled to 1 request/s) |
@@ -227,10 +228,20 @@ Web build variables: `VITE_API_URL` (empty means same origin), `VITE_MAP_TILE_UR
 Admins can change the verification rules at runtime in **Admin → Settings**: the window, the number and share of
 confirmations required, whether a completion photo is required, and auto-verify on silence.
 
+## Deploy for free
+
+[docs/deploy-free.md](docs/deploy-free.md) walks through a no-cost deploy, no credit card needed:
+
+- one Render web service built from `infra/docker/app.Dockerfile`, defined in [`render.yaml`](render.yaml), which
+  serves the web app, the API and the background jobs;
+- Neon for Postgres + PostGIS;
+- Upstash for Redis;
+- Supabase Storage for photos.
+
 ## Deploying to production
 
 - **TLS and cookies.** Terminate TLS in front of nginx (Caddy, Traefik, or a cloud load balancer). Set
-  `COOKIE_SECURE=true` and `PUBLIC_URL=https://…`.
+  `COOKIE_SECURE=true`, `PUBLIC_API_URL=https://…` and `WEB_ORIGIN=https://…`.
 - **Secrets.** Generate a strong `JWT_ACCESS_SECRET` and keep all secrets in your platform's secret store, never in
   the repository.
 - **Database and Redis.** Use managed PostgreSQL with PostGIS (RDS, Cloud SQL, Neon, Supabase…) and managed Redis.

@@ -42,6 +42,8 @@ const csv = (def: string) =>
     );
 
 const isProd = process.env.NODE_ENV === 'production';
+/** Render injects the service's public URL; use it so single-service deploys need no URL config. */
+const hostedUrl = process.env.RENDER_EXTERNAL_URL;
 
 const schema = z.object({
   NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
@@ -51,9 +53,11 @@ const schema = z.object({
   TRUST_PROXY: bool(false),
 
   /** Public base URL of this API, used to build absolute links to uploaded photos. */
-  PUBLIC_API_URL: z.url().default('http://localhost:4000'),
+  PUBLIC_API_URL: z.url().default(hostedUrl ?? 'http://localhost:4000'),
   /** Allowed browser origins (CORS + Socket.IO), comma separated. */
-  WEB_ORIGIN: csv('http://localhost:5173'),
+  WEB_ORIGIN: csv(hostedUrl ?? 'http://localhost:5173'),
+  /** Built web app (apps/web/dist). When set, the API also serves the SPA from the same origin. */
+  WEB_DIST_DIR: z.string().optional(),
 
   DATABASE_URL: z.string().default('postgres://urbanfix:urbanfix@localhost:5432/urbanfix'),
   DATABASE_POOL_MAX: z.coerce.number().int().default(10),

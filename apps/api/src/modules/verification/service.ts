@@ -4,7 +4,7 @@
  * reopens the issue; enough confirmations verify it; when the window closes the
  * round is settled by `evaluateVerification` from @urbanfix/shared.
  */
-import { and, desc, eq, sql } from 'drizzle-orm';
+import { and, asc, desc, eq, lte, sql } from 'drizzle-orm';
 import {
   bumpPriority,
   evaluateVerification,
@@ -13,6 +13,7 @@ import {
 } from '@urbanfix/shared';
 import type { AuthContext } from '../../core/auth';
 import { conflict, forbidden, notFound } from '../../core/errors';
+import { logger } from '../../core/logger';
 import { emitTo, rooms } from '../../core/realtime';
 import { type Tx, db, schema } from '../../db/client';
 import { categoryById } from '../../lib/categories';
@@ -309,4 +310,26 @@ export async function closeRoundJob(roundId: string) {
     else await closeRound(tx, round.id, 'EXPIRED');
   });
   await fx.flush();
+}
+
+/**
+ * Job: settles every round whose window has passed. The per-round delayed job
+ * normally does this; the sweep covers timers lost to restarts (inline mode on a
+ * host that sleeps) or a Redis that dropped delayed jobs.
+ */
+export async function closeExpiredRounds() {
+  const due = await db
+    .select({ id: verificationRounds.id })
+    .from(verificationRounds)
+    .where(and(eq(verificationRounds.outcome, 'PENDING'), lte(verificationRounds.closesAt, new Date())))
+    .orderBy(asc(verificationRounds.closesAt))
+    .limit(100);
+  for (const { id } of due) {
+    try {
+      await closeRoundJob(id);
+    } catch (err) {
+      logger.error({ err, roundId: id }, 'failed to close expired verification round');
+    }
+  }
+  if (due.length) logger.info({ count: due.length }, 'settled expired verification rounds');
 }

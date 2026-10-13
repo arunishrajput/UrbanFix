@@ -85,3 +85,12 @@ jobs:
           tags: urbanfix-web:ci
           cache-from: type=gha,scope=web
           cache-to: type=gha,mode=max,scope=web
+      - name: Single-container image (free-tier deploys)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: infra/docker/app.Dockerfile
+          push: false
+          tags: urbanfix-app:ci
+          cache-from: type=gha,scope=app
+          cache-to: type=gha,mode=max,scope=app

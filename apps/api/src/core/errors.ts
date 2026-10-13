@@ -25,7 +25,10 @@ export const notFound = (what = 'Resource') => new AppError(404, 'NOT_FOUND', `$
 export const conflict = (code: string, message: string, details?: unknown) =>
   new AppError(409, code, message, details);
 
-export function registerErrorHandler(app: FastifyInstance) {
+/** Paths that never fall back to the SPA's index.html. */
+const NON_SPA_PATH = /^\/(api|uploads|socket\.io)(\/|\?|$)/;
+
+export function registerErrorHandler(app: FastifyInstance, opts: { spaFallback?: boolean } = {}) {
   app.setErrorHandler((error: FastifyError | AppError | ZodError, request, reply) => {
     const requestId = request.id;
 
@@ -81,7 +84,15 @@ export function registerErrorHandler(app: FastifyInstance) {
   });
 
   app.setNotFoundHandler((request, reply) => {
-    reply.status(404).send({
+    if (
+      opts.spaFallback &&
+      (request.method === 'GET' || request.method === 'HEAD') &&
+      !NON_SPA_PATH.test(request.url) &&
+      request.headers.accept?.includes('text/html')
+    ) {
+      return reply.sendFile('index.html');
+    }
+    return reply.status(404).send({
       error: {
         code: 'NOT_FOUND',
         message: `Route ${request.method} ${request.url} not found`,

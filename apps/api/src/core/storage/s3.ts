@@ -16,6 +16,12 @@ export class S3Storage implements StorageDriver {
       region: config.S3_REGION,
       endpoint: config.S3_ENDPOINT,
       forcePathStyle: Boolean(config.S3_ENDPOINT),
+      // S3-compatible stores (Supabase, B2, older MinIO) may reject the CRC32 checksum
+      // headers newer SDKs add by default; only send checksums when an operation needs one.
+      ...(config.S3_ENDPOINT && {
+        requestChecksumCalculation: 'WHEN_REQUIRED',
+        responseChecksumValidation: 'WHEN_REQUIRED',
+      }),
       credentials:
         config.S3_ACCESS_KEY_ID && config.S3_SECRET_ACCESS_KEY
           ? { accessKeyId: config.S3_ACCESS_KEY_ID, secretAccessKey: config.S3_SECRET_ACCESS_KEY }

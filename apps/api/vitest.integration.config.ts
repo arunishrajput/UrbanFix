@@ -24,6 +24,8 @@ export default defineConfig({
       GEOCODER_URL: 'http://127.0.0.1:9',
       UPLOAD_DIR: path.join(tmpdir(), 'urbanfix-test-uploads'),
       PUBLIC_API_URL: 'http://test.local',
+      // Serve a tiny stand-in SPA, as the single-container image does.
+      WEB_DIST_DIR: path.join(import.meta.dirname, 'test/fixtures/web-dist'),
     },
   },
 });
