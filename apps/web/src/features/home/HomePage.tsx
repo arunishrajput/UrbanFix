@@ -22,12 +22,12 @@ function Hero({ cityName }: { cityName: string }) {
   const fixed = data?.items ?? [];
   return (
     <section className="asphalt relative overflow-hidden rounded-b-[2rem] md:mx-4 md:mt-4 md:rounded-[2rem]">
-      <div className="relative mx-auto grid max-w-6xl gap-10 px-5 pb-14 pt-10 md:grid-cols-[1.25fr_1fr] md:px-10 md:pb-16 md:pt-14">
+      <div className="relative mx-auto grid max-w-6xl grid-cols-1 gap-10 px-5 pb-14 pt-10 md:grid-cols-[minmax(0,1.25fr)_minmax(0,1fr)] md:px-10 md:pb-16 md:pt-14">
         <div>
           <p className="font-mono text-xs uppercase tracking-[0.2em] text-lane">
             {cityName} Municipal Corporation
           </p>
-          <h1 className="mt-4 text-[2.6rem] font-black leading-[0.95] tracking-[-0.035em] sm:text-6xl">
+          <h1 className="mt-4 text-[2.6rem] font-black leading-[0.95] tracking-[-0.035em] sm:text-6xl md:text-[2.6rem] lg:text-6xl">
             Broken road?
             <br />
             Overflowing bin?

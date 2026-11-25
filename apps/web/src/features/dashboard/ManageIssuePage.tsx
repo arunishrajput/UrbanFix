@@ -496,7 +496,7 @@ export default function ManageIssuePage() {
         <Link
           to={`/issues/${issue.id}`}
           target="_blank"
-          className="inline-flex items-center gap-1 text-sm font-semibold text-signal"
+          className="order-first ml-auto inline-flex basis-full items-center justify-end gap-1 text-sm font-semibold text-signal sm:order-none sm:basis-auto"
         >
           Public page <ExternalLink className="size-3.5" />
         </Link>

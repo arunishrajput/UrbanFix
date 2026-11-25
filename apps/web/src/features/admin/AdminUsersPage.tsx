@@ -166,82 +166,144 @@ export default function AdminUsersPage() {
       {!data ? (
         <Skeleton className="h-96" />
       ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full min-w-[52rem] text-sm">
-            <thead className="bg-surface-2 text-left text-[0.7rem] uppercase tracking-wider text-muted">
-              <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-display [&>th]:font-extrabold">
-                <th>Person</th>
-                <th>Role</th>
-                <th>Ward</th>
-                <th className="text-right">Reports</th>
-                <th className="text-right">Reputation</th>
-                <th>Last seen</th>
-                <th>Access</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {data.items.map((u) => (
-                <tr
-                  key={u.id}
-                  className={cn('[&>td]:px-3 [&>td]:py-2', u.status === 'SUSPENDED' && 'opacity-60')}
-                >
-                  <td>
-                    <p className="font-semibold">{u.isGuest ? 'Guest' : u.name}</p>
-                    <p className="font-mono text-xs text-muted">{u.email ?? 'no email (guest)'}</p>
-                  </td>
-                  <td>
+        <div className="card overflow-hidden">
+          {/* Phones: one card per person with the same controls. */}
+          <ul className="divide-y divide-line md:hidden">
+            {data.items.map((u) => (
+              <li key={u.id} className={cn('space-y-2 p-3', u.status === 'SUSPENDED' && 'opacity-60')}>
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0">
+                    <p className="truncate font-semibold">{u.isGuest ? 'Guest' : u.name}</p>
+                    <p className="truncate font-mono text-xs text-muted">{u.email ?? 'no email (guest)'}</p>
+                  </div>
+                  <Button
+                    size="sm"
+                    variant={u.status === 'SUSPENDED' ? 'outline' : 'ghost'}
+                    disabled={u.id === me?.id}
+                    onClick={() =>
+                      update.mutate({ id: u.id, status: u.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED' })
+                    }
+                  >
+                    {u.status === 'SUSPENDED' ? 'Reinstate' : 'Suspend'}
+                  </Button>
+                </div>
+                <div className="flex flex-wrap gap-2">
+                  <select
+                    aria-label={`Role for ${u.name}`}
+                    className="field w-auto py-1.5 text-sm"
+                    value={u.role}
+                    disabled={u.id === me?.id || u.isGuest}
+                    onChange={(e) => update.mutate({ id: u.id, role: e.target.value as UserRole })}
+                  >
+                    {USER_ROLES.map((r) => (
+                      <option key={r} value={r}>
+                        {LABELS.role[r]}
+                      </option>
+                    ))}
+                  </select>
+                  {u.role !== 'CITIZEN' && (
                     <select
-                      aria-label={`Role for ${u.name}`}
-                      className="field w-auto py-1.5 text-sm"
-                      value={u.role}
-                      disabled={u.id === me?.id || u.isGuest}
-                      onChange={(e) => update.mutate({ id: u.id, role: e.target.value as UserRole })}
+                      aria-label={`Ward for ${u.name}`}
+                      className="field w-auto min-w-0 py-1.5 text-sm"
+                      value={u.wardId ?? ''}
+                      onChange={(e) => update.mutate({ id: u.id, wardId: e.target.value || null })}
                     >
-                      {USER_ROLES.map((r) => (
-                        <option key={r} value={r}>
-                          {LABELS.role[r]}
+                      <option value="">City-wide</option>
+                      {wards?.map((w) => (
+                        <option key={w.id} value={w.id}>
+                          {w.name}
                         </option>
                       ))}
                     </select>
-                  </td>
-                  <td>
-                    {u.role === 'CITIZEN' ? (
-                      <span className="text-muted">—</span>
-                    ) : (
+                  )}
+                </div>
+                <p className="font-mono text-xs text-muted">
+                  {u.reportCount} reports · {u.reputation} rep · seen{' '}
+                  {u.lastSeenAt ? timeAgo(u.lastSeenAt) : 'never'}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[52rem] text-sm">
+              <thead className="bg-surface-2 text-left text-[0.7rem] uppercase tracking-wider text-muted">
+                <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-display [&>th]:font-extrabold">
+                  <th>Person</th>
+                  <th>Role</th>
+                  <th>Ward</th>
+                  <th className="text-right">Reports</th>
+                  <th className="text-right">Reputation</th>
+                  <th>Last seen</th>
+                  <th>Access</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {data.items.map((u) => (
+                  <tr
+                    key={u.id}
+                    className={cn('[&>td]:px-3 [&>td]:py-2', u.status === 'SUSPENDED' && 'opacity-60')}
+                  >
+                    <td>
+                      <p className="font-semibold">{u.isGuest ? 'Guest' : u.name}</p>
+                      <p className="font-mono text-xs text-muted">{u.email ?? 'no email (guest)'}</p>
+                    </td>
+                    <td>
                       <select
-                        aria-label={`Ward for ${u.name}`}
+                        aria-label={`Role for ${u.name}`}
                         className="field w-auto py-1.5 text-sm"
-                        value={u.wardId ?? ''}
-                        onChange={(e) => update.mutate({ id: u.id, wardId: e.target.value || null })}
+                        value={u.role}
+                        disabled={u.id === me?.id || u.isGuest}
+                        onChange={(e) => update.mutate({ id: u.id, role: e.target.value as UserRole })}
                       >
-                        <option value="">City-wide</option>
-                        {wards?.map((w) => (
-                          <option key={w.id} value={w.id}>
-                            {w.name}
+                        {USER_ROLES.map((r) => (
+                          <option key={r} value={r}>
+                            {LABELS.role[r]}
                           </option>
                         ))}
                       </select>
-                    )}
-                  </td>
-                  <td className="text-right font-mono">{u.reportCount}</td>
-                  <td className="text-right font-mono">{u.reputation}</td>
-                  <td className="text-xs text-muted">{u.lastSeenAt ? timeAgo(u.lastSeenAt) : 'never'}</td>
-                  <td>
-                    <Button
-                      size="sm"
-                      variant={u.status === 'SUSPENDED' ? 'outline' : 'ghost'}
-                      disabled={u.id === me?.id}
-                      onClick={() =>
-                        update.mutate({ id: u.id, status: u.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED' })
-                      }
-                    >
-                      {u.status === 'SUSPENDED' ? 'Reinstate' : 'Suspend'}
-                    </Button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+                    </td>
+                    <td>
+                      {u.role === 'CITIZEN' ? (
+                        <span className="text-muted">—</span>
+                      ) : (
+                        <select
+                          aria-label={`Ward for ${u.name}`}
+                          className="field w-auto py-1.5 text-sm"
+                          value={u.wardId ?? ''}
+                          onChange={(e) => update.mutate({ id: u.id, wardId: e.target.value || null })}
+                        >
+                          <option value="">City-wide</option>
+                          {wards?.map((w) => (
+                            <option key={w.id} value={w.id}>
+                              {w.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+                    </td>
+                    <td className="text-right font-mono">{u.reportCount}</td>
+                    <td className="text-right font-mono">{u.reputation}</td>
+                    <td className="text-xs text-muted">{u.lastSeenAt ? timeAgo(u.lastSeenAt) : 'never'}</td>
+                    <td>
+                      <Button
+                        size="sm"
+                        variant={u.status === 'SUSPENDED' ? 'outline' : 'ghost'}
+                        disabled={u.id === me?.id}
+                        onClick={() =>
+                          update.mutate({
+                            id: u.id,
+                            status: u.status === 'SUSPENDED' ? 'ACTIVE' : 'SUSPENDED',
+                          })
+                        }
+                      >
+                        {u.status === 'SUSPENDED' ? 'Reinstate' : 'Suspend'}
+                      </Button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <div className="flex items-center justify-between border-t border-line px-3 py-2 text-sm text-muted">
             <span>{data.total} people</span>
             <div className="flex gap-2">

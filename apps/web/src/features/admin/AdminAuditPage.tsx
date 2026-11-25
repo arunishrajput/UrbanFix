@@ -41,34 +41,54 @@ export default function AdminAuditPage() {
       {!data ? (
         <Skeleton className="h-96" />
       ) : (
-        <div className="card overflow-x-auto">
-          <table className="w-full min-w-[48rem] text-sm">
-            <thead className="bg-surface-2 text-left text-[0.7rem] uppercase tracking-wider text-muted">
-              <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-display [&>th]:font-extrabold">
-                <th>When</th>
-                <th>Who</th>
-                <th>Action</th>
-                <th>Details</th>
-                <th>IP</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-line">
-              {data.items.map((a) => (
-                <tr key={a.id} className="[&>td]:px-3 [&>td]:py-2 align-top">
-                  <td className="whitespace-nowrap font-mono text-xs">{dateTime(a.createdAt)}</td>
-                  <td className="whitespace-nowrap">{a.actor?.name ?? 'System'}</td>
-                  <td className="font-mono text-xs font-semibold">{a.action}</td>
-                  <td
-                    className="max-w-md truncate font-mono text-xs text-muted"
-                    title={JSON.stringify(a.diff)}
-                  >
-                    {JSON.stringify(a.diff)}
-                  </td>
-                  <td className="font-mono text-xs text-muted">{a.ip}</td>
+        <div className="card overflow-hidden">
+          {/* Phones: stacked entries instead of a wide table. */}
+          <ul className="divide-y divide-line md:hidden">
+            {data.items.map((a) => (
+              <li key={a.id} className="p-3 text-sm">
+                <div className="flex items-baseline justify-between gap-3">
+                  <span className="min-w-0 truncate font-mono text-xs font-semibold">{a.action}</span>
+                  <span className="shrink-0 font-mono text-[0.7rem] text-muted">{dateTime(a.createdAt)}</span>
+                </div>
+                <p className="mt-0.5">
+                  {a.actor?.name ?? 'System'}
+                  {a.ip && <span className="font-mono text-xs text-muted"> · {a.ip}</span>}
+                </p>
+                <p className="mt-1 line-clamp-2 break-all font-mono text-xs text-muted">
+                  {JSON.stringify(a.diff)}
+                </p>
+              </li>
+            ))}
+          </ul>
+          <div className="hidden overflow-x-auto md:block">
+            <table className="w-full min-w-[48rem] text-sm">
+              <thead className="bg-surface-2 text-left text-[0.7rem] uppercase tracking-wider text-muted">
+                <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-display [&>th]:font-extrabold">
+                  <th>When</th>
+                  <th>Who</th>
+                  <th>Action</th>
+                  <th>Details</th>
+                  <th>IP</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody className="divide-y divide-line">
+                {data.items.map((a) => (
+                  <tr key={a.id} className="[&>td]:px-3 [&>td]:py-2 align-top">
+                    <td className="whitespace-nowrap font-mono text-xs">{dateTime(a.createdAt)}</td>
+                    <td className="whitespace-nowrap">{a.actor?.name ?? 'System'}</td>
+                    <td className="font-mono text-xs font-semibold">{a.action}</td>
+                    <td
+                      className="max-w-md truncate font-mono text-xs text-muted"
+                      title={JSON.stringify(a.diff)}
+                    >
+                      {JSON.stringify(a.diff)}
+                    </td>
+                    <td className="font-mono text-xs text-muted">{a.ip}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
           <div className="flex items-center justify-between border-t border-line px-3 py-2 text-sm text-muted">
             <span>{data.total} entries</span>
             <div className="flex gap-2">

@@ -271,7 +271,45 @@ function IssuesTable({
   const pages = Math.max(1, Math.ceil(data.total / data.pageSize));
   return (
     <div className="card overflow-hidden">
-      <div className="overflow-x-auto">
+      {/* Phones: stacked rows. The full table needs more width than a phone has. */}
+      <ul className="divide-y divide-line md:hidden">
+        {data.items.map((r) => (
+          <li key={r.id} className={cn(r.overdue && 'bg-[#fff3ee] dark:bg-[#2a1810]')}>
+            <Link to={`/dashboard/issues/${r.id}`} className="flex gap-3 p-3 hover:bg-surface-2">
+              {r.coverPhoto ? (
+                <Photo
+                  src={r.coverPhoto.thumbUrl}
+                  thumbhash={r.coverPhoto.thumbhash}
+                  alt=""
+                  className="size-12 shrink-0 rounded-lg"
+                />
+              ) : (
+                <CategoryIcon category={r.category} size="md" />
+              )}
+              <span className="min-w-0 flex-1">
+                <span className="block truncate font-semibold">{r.title}</span>
+                <span className="block truncate font-mono text-[0.7rem] text-muted">
+                  {r.ref} · {r.category.name}
+                  {r.wardName && ` · ${r.wardName}`}
+                  {r.flagged && <span className="ml-1 rounded bg-cone px-1 text-white">flagged</span>}
+                </span>
+                <span className="mt-1.5 flex flex-wrap items-center gap-x-2 gap-y-1">
+                  <StatusPill status={r.status} />
+                  <PriorityBadge priority={r.priority} />
+                  <SlaCell row={r} />
+                </span>
+                <span className="mt-1 block truncate text-xs">
+                  {r.assignee?.name ?? (
+                    <span className="font-semibold text-[#7a5a00] dark:text-lane">Unassigned</span>
+                  )}
+                  <span className="text-muted"> · {timeAgo(r.lastActivityAt)}</span>
+                </span>
+              </span>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <div className="hidden overflow-x-auto md:block">
         <table className={cn('w-full text-sm', compact ? 'min-w-[36rem]' : 'min-w-[56rem]')}>
           <thead className="bg-surface-2 text-left">
             <tr className="[&>th]:px-3 [&>th]:py-2.5 [&>th]:font-display [&>th]:text-[0.7rem] [&>th]:font-extrabold [&>th]:uppercase [&>th]:tracking-wider [&>th]:text-muted">
